@@ -69,32 +69,43 @@
         quadroTeste.style.display = "none";
 
         // Mostra mensagem de anulação
-        mensagem.classList.add("erro");
         mensagem.style.background = "#f8d7da";
         mensagem.style.color = "#721c24";
         mensagem.style.borderColor = "#f5c6cb";
         mensagem.textContent =
           "O teste foi ANULADO porque saiu desta página (" +
           motivo +
-          "). " +
-          "Informe o professor.";
+          "). Informe o professor.";
       }
 
-      // ⚠️ Apenas quando a JANELA perde foco (ex.: mudou de aba, janela ou aplicação).
-      // Pequeno atraso para evitar falsos positivos (ex.: focar iframe/inputs).
+      // ✅ 1) Aba deixou de estar visível (mudou de aba, minimizou, mudou de janela/app)
+      document.addEventListener("visibilitychange", () => {
+        if (testeAnulado) return;
+        if (document.visibilityState === "hidden") {
+          anularTeste("a aba/janela deixou de estar visível");
+        }
+      });
+
+      // ✅ 2) Janela perdeu o foco (fallback). Pequeno atraso para não punir foco em inputs/iframe.
       window.addEventListener("blur", function () {
         if (testeAnulado) return;
 
         setTimeout(() => {
-          // Se após um “tick” a página realmente não tiver foco, então anulamos
-          if (!document.hasFocus()) {
+          // Se a aba não estiver visível OU o documento não tiver foco, então saiu mesmo
+          const saiuDaPagina =
+            document.visibilityState !== "visible" || !document.hasFocus();
+
+          if (saiuDaPagina) {
             anularTeste("a janela perdeu foco");
           }
         }, 150);
       });
 
-      // 🚫 Removido: não usamos mais visibilitychange para permitir input na página/iframe
-      // document.addEventListener("visibilitychange", ...)
+      // ✅ 3) Navegação/fecho da página (ex.: voltar atrás, fechar aba)
+      window.addEventListener("pagehide", () => {
+        if (testeAnulado) return;
+        anularTeste("a página foi fechada ou navegou para fora");
+      });
     </script>
   </body>
 </html>
